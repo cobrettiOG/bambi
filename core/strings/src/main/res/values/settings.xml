@@ -3,6 +3,7 @@
     <string name="settings_home_categories">Home categories</string>
     <string name="settings_ok_shows_or_hides_each_one_back">OK shows or hides each one. Back when you\'re done. At least one always stays.</string>
     <string name="settings_show_all">Show all</string>
+    <string name="settings_hide_all">Hide all</string>
     <string name="settings_done">Done</string>
     <string name="settings_add_profile">Add profile</string>
     <string name="settings_edit_profile">Edit profile</string>
@@ -287,4 +288,15 @@
     <string name="photo_page_sending">Sending…</string>
     <string name="photo_page_done">Done! It\'s on the TV now.</string>
     <string name="photo_page_error">Couldn\'t send it. Please try again.</string>
+    <string name="profile_editor_identity">Identity</string>
+    <string name="profile_editor_language_playback">Language and playback</string>
+    <string name="profile_editor_privacy_content">Privacy and content</string>
+    <string name="profile_editor_actions">Actions</string>
+    <string name="profile_editor_kids">Kids profile</string>
+    <string name="profile_editor_categories">Home categories</string>
+    <string name="profile_editor_spanish_only">Spanish-only sources</string>
+    <string name="profile_editor_spanish_first">Prefer Spanish sources</string>
+    <string name="profile_editor_wait">Please wait</string>
+    <string name="profile_editor_not_connected">Not connected</string>
+    <string name="profile_editor_color_number">Color %1$d</string>
 </resources>

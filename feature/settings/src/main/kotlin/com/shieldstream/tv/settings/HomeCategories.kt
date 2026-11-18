@@ -52,7 +52,7 @@ private val Red = Color(0xFFE50914)
 internal fun HomeCategoriesDialog(
     hidden: Set<String>,
     onToggle: (Category) -> Unit,
-    onShowAll: () -> Unit,
+    onToggleAll: () -> Unit,
     onClose: () -> Unit,
 ) {
     val first = remember { FocusRequester() }
@@ -96,7 +96,12 @@ internal fun HomeCategoriesDialog(
             }
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                DialogButton(localizedStringResource(StringsR.string.settings_show_all), onShowAll)
+                val action = if (Category.entries.none { it.name in hidden }) {
+                    StringsR.string.settings_hide_all
+                } else {
+                    StringsR.string.settings_show_all
+                }
+                DialogButton(localizedStringResource(action), onToggleAll)
                 DialogButton(localizedStringResource(StringsR.string.settings_done), onClose)
             }
         }

@@ -2,6 +2,7 @@ package com.shieldstream.tv.settings.profiles
 
 import com.shieldstream.tv.strings.R as StringsR
 import com.shieldstream.tv.strings.localizedStringResource
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -10,16 +11,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicTextField
@@ -33,31 +34,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shieldstream.tv.model.Category
 import com.shieldstream.tv.model.ProfileAvatars
@@ -65,7 +64,6 @@ import com.shieldstream.tv.model.SubtitlePreference
 import com.shieldstream.tv.settings.HomeCategoriesDialog
 import com.shieldstream.tv.ui.component.AppIcons
 import com.shieldstream.tv.ui.component.ProfileAvatar
-import com.shieldstream.tv.ui.component.TvButton
 import com.shieldstream.tv.ui.component.tvClickable
 import com.shieldstream.tv.ui.theme.InterFontFamily
 
@@ -82,17 +80,8 @@ fun ProfileEditScreen(
         LaunchedEffect(Unit) { onDone() }
         return
     }
-    val nameRequester = remember { FocusRequester() }
-    val saveRequester = remember { FocusRequester() }
-    val categoriesRequester = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
-    LaunchedEffect(Unit) {
-        runCatching { nameRequester.requestFocus() }
-        repeat(3) {
-            delay(120)
-            keyboard?.hide()
-        }
-    }
+    val colorRequester = remember { FocusRequester() }
+    val subtitlesRequester = remember { FocusRequester() }
     val profile = editing.profile
     var creatingPin by remember { mutableStateOf(false) }
     var firstPin by remember { mutableStateOf<String?>(null) }
@@ -100,121 +89,155 @@ fun ProfileEditScreen(
     var choosingCategories by remember { mutableStateOf(false) }
     var choosingIcon by remember { mutableStateOf(false) }
 
-    Box(Modifier.fillMaxSize().background(Color(0xFF101114)), contentAlignment = Alignment.TopCenter) {
+    var colorsExpanded by remember { mutableStateOf(false) }
+    var subtitlesExpanded by remember { mutableStateOf(false) }
+
+    Box(
+        Modifier.fillMaxSize().background(Color(0xFF080809)),
+        contentAlignment = Alignment.TopCenter,
+    ) {
         Column(
-            Modifier
-                .widthIn(max = 880.dp)
+            modifier = Modifier
+                .widthIn(max = 704.dp)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 36.dp, vertical = 32.dp),
+                .padding(horizontal = 32.dp, vertical = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Text(
-                if (editing.isNew) localizedStringResource(StringsR.string.settings_add_profile) else localizedStringResource(StringsR.string.settings_edit_profile),
+                if (editing.isNew) localizedStringResource(StringsR.string.settings_add_profile)
+                else localizedStringResource(StringsR.string.settings_edit_profile),
                 color = Color.White,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.SemiBold,
             )
-            Spacer(Modifier.height(24.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                // OK sobre el avatar: elegir un icono.
-                AvatarButton(
-                    initial = profile.initial,
-                    avatar = profile.avatar,
-                    image = profile.avatarImage,
+            EditorSection(localizedStringResource(StringsR.string.profile_editor_identity)) {
+                EditorRow(
+                    label = localizedStringResource(StringsR.string.settings_profile_icon),
                     onClick = { choosingIcon = true },
+                ) {
+                    ProfileAvatar(initial = profile.initial, avatar = profile.avatar, size = 72.dp, image = profile.avatarImage)
+                }
+                EditorDivider()
+                NameField(
+                    value = profile.name,
+                    onValueChange = viewModel::setName,
                 )
-                Column(Modifier.weight(1f)) {
-                    NameField(
-                        value = profile.name,
-                        onValueChange = viewModel::setName,
-                        modifier = Modifier.focusRequester(nameRequester),
-                    )
-                    Spacer(Modifier.height(20.dp))
-                    Text(localizedStringResource(StringsR.string.settings_color), color = ProfileMuted, fontSize = 16.sp)
-                    Spacer(Modifier.height(10.dp))
+                EditorDivider()
+                EditorRow(
+                    label = localizedStringResource(StringsR.string.settings_color),
+                    modifier = Modifier.focusRequester(colorRequester),
+                    onClick = { colorsExpanded = !colorsExpanded },
+                ) {
+                    ProfileAvatar(initial = profile.initial, avatar = profile.avatar, size = 30.dp)
+                    EditorDisclosure(expanded = colorsExpanded)
+                }
+                if (colorsExpanded) {
+                    EditorDivider()
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         ProfileAvatars.colors.indices.forEach { index ->
                             ColorChoice(
                                 initial = profile.initial,
                                 avatar = index,
                                 selected = index == ProfileAvatars.safe(profile.avatar),
-                                onClick = { viewModel.setAvatar(index) },
+                                onClick = {
+                                    viewModel.setAvatar(index)
+                                    colorRequester.requestFocus()
+                                    colorsExpanded = false
+                                },
                             )
                         }
                     }
                 }
             }
-            Spacer(Modifier.height(28.dp))
-            TraktCard(
-                state = editing,
-                onConnect = { viewModel.save()?.let(onConnectTrakt) },
-                onDisconnect = viewModel::disconnectTrakt,
-                onFocusLost = viewModel::cancelConfirmations,
-            )
-            Spacer(Modifier.height(20.dp))
-            Text(localizedStringResource(StringsR.string.settings_audio_for_this_profile), color = ProfileMuted, fontSize = 16.sp)
-            Spacer(Modifier.height(8.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OptionChip(
-                    text = if (profile.spanishOnlySources) localizedStringResource(StringsR.string.settings_spanish_only_on) else localizedStringResource(StringsR.string.settings_spanish_only_off),
-                    highlighted = profile.spanishOnlySources,
+            EditorSection("Trakt") {
+                val user = profile.traktUser
+                EditorRow(
+                    label = when {
+                        editing.confirmDisconnect -> localizedStringResource(StringsR.string.settings_disconnect_trakt)
+                        user != null -> localizedStringResource(StringsR.string.settings_connected)
+                        else -> localizedStringResource(StringsR.string.settings_connect_trakt)
+                    },
+                    value = when {
+                        !editing.traktAvailable -> localizedStringResource(StringsR.string.settings_trakt_not_available)
+                        editing.busy -> localizedStringResource(StringsR.string.profile_editor_wait)
+                        editing.confirmDisconnect && user != null ->
+                            localizedStringResource(StringsR.string.settings_trakt_disconnect_user, user)
+                        user != null -> "@$user"
+                        else -> localizedStringResource(StringsR.string.profile_editor_not_connected)
+                    },
+                    enabled = editing.traktAvailable && !editing.busy,
+                    onFocusLost = viewModel::cancelConfirmations,
+                    onClick = {
+                        if (user != null) viewModel.disconnectTrakt() else viewModel.save()?.let(onConnectTrakt)
+                    },
+                )
+            }
+            EditorSection(localizedStringResource(StringsR.string.profile_editor_language_playback)) {
+                EditorRow(
+                    label = localizedStringResource(StringsR.string.profile_editor_spanish_only),
+                    value = toggleValue(profile.spanishOnlySources),
                     onClick = { viewModel.setSpanishOnly(!profile.spanishOnlySources) },
                 )
-                OptionChip(
-                    text = if (profile.spanishFirst || profile.spanishOnlySources) localizedStringResource(StringsR.string.settings_spanish_first_on) else localizedStringResource(StringsR.string.settings_spanish_first_off),
-                    highlighted = profile.spanishFirst || profile.spanishOnlySources,
-                    onClick = { if (!profile.spanishOnlySources) viewModel.setSpanishFirst(!profile.spanishFirst) },
+                EditorDivider()
+                EditorRow(
+                    label = localizedStringResource(StringsR.string.profile_editor_spanish_first),
+                    value = toggleValue(profile.spanishFirst || profile.spanishOnlySources),
+                    enabled = !profile.spanishOnlySources,
+                    onClick = { viewModel.setSpanishFirst(!profile.spanishFirst) },
                 )
-            }
-            Spacer(Modifier.height(20.dp))
-            Text(localizedStringResource(StringsR.string.settings_default_subtitles), color = ProfileMuted, fontSize = 16.sp)
-            Spacer(Modifier.height(8.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SubtitlePreference.entries.forEach { preference ->
-                    OptionChip(
-                        text = when (preference) {
-                            SubtitlePreference.OFF -> localizedStringResource(StringsR.string.settings_off)
-                            SubtitlePreference.SPANISH -> localizedStringResource(StringsR.string.settings_spanish)
-                            SubtitlePreference.ENGLISH -> localizedStringResource(StringsR.string.settings_english)
-                        },
-                        highlighted = profile.subtitlePreference == preference,
-                        onClick = { viewModel.setSubtitlePreference(preference) },
+                EditorDivider()
+                EditorRow(
+                    label = localizedStringResource(StringsR.string.settings_default_subtitles),
+                    value = subtitleLabel(profile.subtitlePreference),
+                    modifier = Modifier.focusRequester(subtitlesRequester),
+                    onClick = { subtitlesExpanded = !subtitlesExpanded },
+                ) {
+                    EditorDisclosure(expanded = subtitlesExpanded)
+                }
+                if (subtitlesExpanded) {
+                    Text(
+                        localizedStringResource(StringsR.string.settings_if_the_file_has_no_subtitles_in),
+                        color = EditorMuted,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
+                    SubtitlePreference.entries.forEach { preference ->
+                        EditorDivider()
+                        val selected = preference == profile.subtitlePreference
+                        EditorRow(
+                            label = subtitleLabel(preference),
+                            modifier = Modifier.padding(start = 16.dp).semantics { this.selected = selected },
+                            onClick = {
+                                viewModel.setSubtitlePreference(preference)
+                                subtitlesRequester.requestFocus()
+                                subtitlesExpanded = false
+                            },
+                        ) {
+                            if (selected) Icon(AppIcons.Check, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
+                    }
                 }
             }
-            Text(
-                localizedStringResource(StringsR.string.settings_if_the_file_has_no_subtitles_in),
-                color = ProfileMuted,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-            Spacer(Modifier.height(20.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OptionChip(
-                    text = if (profile.kids) localizedStringResource(StringsR.string.settings_kids_profile_on) else localizedStringResource(StringsR.string.settings_kids_profile_off),
-                    highlighted = profile.kids,
+            EditorSection(localizedStringResource(StringsR.string.profile_editor_privacy_content)) {
+                EditorRow(
+                    label = localizedStringResource(StringsR.string.profile_editor_kids),
+                    value = toggleValue(profile.kids),
                     onClick = { viewModel.setKids(!profile.kids) },
-                    modifier = Modifier.focusProperties { down = if (profile.kids) saveRequester else categoriesRequester },
                 )
-                OptionChip(
-                    text = when {
+                EditorDivider()
+                EditorRow(
+                    label = "PIN",
+                    value = when {
                         !profile.locked -> localizedStringResource(StringsR.string.settings_set_pin)
                         editing.confirmRemovePin -> localizedStringResource(StringsR.string.settings_press_again_to_remove_the_pin)
                         else -> localizedStringResource(StringsR.string.settings_pin_set_ok_to_remove)
                     },
-                    highlighted = profile.locked,
+                    onFocusLost = viewModel::cancelConfirmations,
                     onClick = {
                         if (profile.locked) {
                             viewModel.removePin()
@@ -224,46 +247,36 @@ fun ProfileEditScreen(
                             creatingPin = true
                         }
                     },
-                    onFocusLost = viewModel::cancelConfirmations,
-                    modifier = Modifier.focusProperties { down = if (profile.kids) saveRequester else categoriesRequester },
                 )
+                if (!profile.kids) {
+                    EditorDivider()
+                    val visibleCount = Category.entries.count { it.name !in profile.hiddenCategories }
+                    EditorRow(
+                        label = localizedStringResource(StringsR.string.profile_editor_categories),
+                        value = "$visibleCount / ${Category.entries.size}",
+                        onClick = { choosingCategories = true },
+                    )
+                }
             }
-            if (!profile.kids) {
-                Spacer(Modifier.height(8.dp))
-                OptionChip(
-                    text = localizedStringResource(
-                        StringsR.string.settings_profile_categories,
-                        Category.entries.count { it.name !in profile.hiddenCategories },
-                        Category.entries.size,
-                    ),
-                    highlighted = profile.hiddenCategories.isNotEmpty(),
-                    onClick = { choosingCategories = true },
-                    modifier = Modifier.focusRequester(categoriesRequester).focusProperties { down = saveRequester },
-                )
-            }
-            Spacer(Modifier.height(24.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TvButton(
-                    text = localizedStringResource(StringsR.string.settings_save),
+            EditorSection(localizedStringResource(StringsR.string.profile_editor_actions)) {
+                EditorRow(
+                    label = localizedStringResource(StringsR.string.settings_save),
                     onClick = {
                         viewModel.save()
                         onDone()
                     },
-                    modifier = Modifier.focusRequester(saveRequester),
                 )
-                TvButton(text = localizedStringResource(StringsR.string.settings_cancel), onClick = onDone)
+                EditorDivider()
+                EditorRow(label = localizedStringResource(StringsR.string.settings_cancel), onClick = onDone)
                 if (editing.canDelete) {
-                    TvButton(
-                        text = if (editing.confirmDelete) {
+                    EditorDivider()
+                    EditorRow(
+                        label = localizedStringResource(StringsR.string.settings_delete_profile),
+                        value = if (editing.confirmDelete) {
                             localizedStringResource(StringsR.string.settings_press_again_to_delete)
-                        } else {
-                            localizedStringResource(StringsR.string.settings_delete_profile)
-                        },
+                        } else null,
                         onClick = { if (viewModel.delete()) onDone() },
-                        modifier = Modifier.onFocusChanged { if (!it.isFocused) viewModel.cancelConfirmations() },
+                        onFocusLost = viewModel::cancelConfirmations,
                     )
                 }
             }
@@ -320,26 +333,57 @@ fun ProfileEditScreen(
         HomeCategoriesDialog(
             hidden = profile.hiddenCategories,
             onToggle = viewModel::toggleCategory,
-            onShowAll = viewModel::showAllCategories,
+            onToggleAll = viewModel::toggleAllCategories,
             onClose = { choosingCategories = false },
         )
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun NameField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun NameField(value: String, onValueChange: (String) -> Unit) {
+    val requester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
-    var focused by remember { mutableStateOf(false) }
-    var pressedHere by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
+    val nameLabel = localizedStringResource(StringsR.string.settings_name)
+    LaunchedEffect(editing) {
+        requester.requestFocus()
+        if (editing) {
+            withFrameNanos { }
+            keyboard?.show()
+        }
+    }
+    if (!editing) {
+        EditorRow(
+            label = nameLabel,
+            value = value.ifEmpty { localizedStringResource(StringsR.string.settings_press_ok_to_type_the_name) },
+            modifier = Modifier.focusRequester(requester),
+            onClick = { editing = true },
+        )
+        return
+    }
+
+    val imeVisible = WindowInsets.isImeVisible
+    var imeWasVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(imeVisible) {
+        if (imeVisible) imeWasVisible = true
+        else if (imeWasVisible) editing = false
+    }
+    val finishEditing = {
+        keyboard?.hide()
+        editing = false
+    }
+    BackHandler(onBack = finishEditing)
+
     BasicTextField(
         value = value,
         onValueChange = { onValueChange(it.replace("\n", "")) },
         singleLine = true,
         textStyle = TextStyle(
             color = Color.White,
-            fontSize = 21.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
             fontFamily = InterFontFamily,
         ),
         cursorBrush = SolidColor(Color.White),
@@ -349,85 +393,34 @@ private fun NameField(value: String, onValueChange: (String) -> Unit, modifier: 
             imeAction = ImeAction.Done,
             showKeyboardOnFocus = false,
         ),
-        keyboardActions = KeyboardActions(onDone = {
-            keyboard?.hide()
-            focusManager.moveFocus(FocusDirection.Down)
-        }),
-        modifier = modifier
+        keyboardActions = KeyboardActions(onDone = { finishEditing() }),
+        modifier = Modifier
             .fillMaxWidth()
-            .onFocusChanged { focused = it.isFocused }
-            .onPreviewKeyEvent { event ->
-                when (event.key) {
-                    Key.DirectionCenter, Key.Enter -> {
-                        if (event.type == KeyEventType.KeyDown) pressedHere = true
-                        if (event.type == KeyEventType.KeyUp && pressedHere) {
-                            pressedHere = false
-                            keyboard?.show()
-                        }
-                        true
-                    }
-                    Key.DirectionDown -> {
-                        if (event.type == KeyEventType.KeyDown) focusManager.moveFocus(FocusDirection.Down)
-                        true
-                    }
-                    else -> false
-                }
-            },
+            .focusRequester(requester)
+            .semantics { contentDescription = nameLabel },
         decorationBox = { field ->
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFF17181C), RoundedCornerShape(10.dp))
-                    .border(
-                        width = if (focused) 2.dp else 1.dp,
-                        color = if (focused) Color.White else Color.White.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(10.dp),
-                    )
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
+            Row(
+                modifier = Modifier.editorRowSurface(focused = true).editorRowPadding(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                if (value.isEmpty()) {
-                    Text(
-                        if (focused) localizedStringResource(StringsR.string.settings_press_ok_to_type_the_name) else localizedStringResource(StringsR.string.settings_name),
-                        fontSize = 20.sp,
-                        color = Color.White.copy(alpha = 0.35f),
-                    )
-                }
-                field()
+                Text(nameLabel, color = Color.White, fontSize = 16.sp, modifier = Modifier.clearAndSetSemantics {})
+                Box(Modifier.weight(1f), propagateMinConstraints = true) { field() }
             }
         },
     )
 }
 
 @Composable
-private fun AvatarButton(initial: String, avatar: Int, image: String?, onClick: () -> Unit) {
-    var focused by remember { mutableStateOf(false) }
-    Box(
-        Modifier
-            .border(1.5.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(22.dp))
-            .padding(5.dp)
-            .onFocusChanged { focused = it.isFocused }
-            .tvClickable(onClick = onClick),
-    ) {
-        ProfileAvatar(initial = initial, avatar = avatar, size = 128.dp, image = image)
-        Icon(
-            AppIcons.Edit,
-            contentDescription = localizedStringResource(StringsR.string.settings_profile_icon),
-            tint = Color.White,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(8.dp)
-                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                .padding(6.dp)
-                .size(16.dp),
-        )
-    }
-}
-
-@Composable
 private fun ColorChoice(initial: String, avatar: Int, selected: Boolean, onClick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
+    val description = localizedStringResource(StringsR.string.profile_editor_color_number, avatar + 1)
     Box(
         Modifier
+            .semantics {
+                contentDescription = description
+                this.selected = selected
+            }
             .border(
                 width = 1.5.dp,
                 color = when {
@@ -445,86 +438,98 @@ private fun ColorChoice(initial: String, avatar: Int, selected: Boolean, onClick
     }
 }
 
+private val EditorMuted = Color(0xFFB9BAC1)
+private val EditorPanel = Color(0xFF151518)
+private val EditorPanelShape = RoundedCornerShape(12.dp)
+private val EditorRowShape = RoundedCornerShape(8.dp)
+
 @Composable
-private fun TraktCard(
-    state: ProfileEditUiState.Editing,
-    onConnect: () -> Unit,
-    onDisconnect: () -> Unit,
-    onFocusLost: () -> Unit,
-) {
-    var focused by remember { mutableStateOf(false) }
-    val user = state.profile.traktUser
-    val (title, subtitle) = when {
-        !state.traktAvailable -> localizedStringResource(StringsR.string.settings_trakt_not_available) to
-            localizedStringResource(StringsR.string.settings_this_build_of_bambi_has_no_traktclientid)
-        user != null && state.confirmDisconnect -> localizedStringResource(StringsR.string.settings_disconnect_trakt) to
-            localizedStringResource(StringsR.string.settings_trakt_disconnect_user, user)
-        user != null -> localizedStringResource(StringsR.string.settings_trakt_connected_user, user) to
-            localizedStringResource(StringsR.string.settings_continue_watching_and_your_history_sync_across)
-        else -> localizedStringResource(StringsR.string.settings_connect_trakt) to
-            localizedStringResource(StringsR.string.settings_sync_continue_watching_and_your_history_across)
-    }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (focused) Color(0xFF25262B) else Color(0xFF191A1E), RoundedCornerShape(14.dp))
-            .border(
-                width = if (focused) 2.dp else 1.dp,
-                color = if (focused) Color.White else Color.White.copy(alpha = 0.08f),
-                shape = RoundedCornerShape(14.dp),
-            )
-            .onFocusChanged {
-                focused = it.isFocused
-                if (!it.isFocused) onFocusLost()
-            }
-            .tvClickable(enabled = state.traktAvailable && !state.busy) {
-                if (user != null) onDisconnect() else onConnect()
-            }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-    ) {
-        Box(
-            Modifier.size(36.dp).background(TraktRed, RoundedCornerShape(50)),
-            contentAlignment = Alignment.Center,
+private fun EditorSection(title: String, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            title,
+            modifier = Modifier.padding(start = 4.dp).semantics { heading() },
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = EditorMuted,
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth().background(EditorPanel, EditorPanelShape).padding(4.dp),
         ) {
-            Text("t", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = if (state.confirmDisconnect) Color(0xFFF5B83D) else ProfileMuted, fontSize = 15.sp)
+            content()
         }
     }
 }
 
 @Composable
-private fun OptionChip(
-    text: String,
-    highlighted: Boolean,
+private fun EditorDivider() {
+    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(Color.White.copy(alpha = 0.07f)))
+}
+
+@Composable
+private fun EditorRow(
+    label: String,
     onClick: () -> Unit,
-    onFocusLost: () -> Unit = {},
     modifier: Modifier = Modifier,
+    value: String? = null,
+    enabled: Boolean = true,
+    onFocusLost: () -> Unit = {},
+    trailing: @Composable () -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
-    Text(
-        text,
-        color = if (focused) Color.Black else Color.White,
-        fontSize = 15.sp,
-        fontWeight = FontWeight.Medium,
+    Row(
         modifier = modifier
-            .background(
-                when {
-                    focused -> Color.White
-                    highlighted -> Color.White.copy(alpha = 0.2f)
-                    else -> Color.White.copy(alpha = 0.08f)
-                },
-                RoundedCornerShape(10.dp),
-            )
+            .editorRowSurface(focused)
             .onFocusChanged {
+                val hadFocus = focused
                 focused = it.isFocused
-                if (!it.isFocused) onFocusLost()
+                if (hadFocus && !focused) onFocusLost()
             }
-            .tvClickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .tvClickable(enabled = enabled, onClick = onClick)
+            .editorRowPadding(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val labelColor = if (enabled) Color.White else EditorMuted
+        Text(label, modifier = Modifier.weight(1f), fontSize = 16.sp, color = labelColor)
+        if (value != null) {
+            Text(
+                value,
+                modifier = Modifier.widthIn(max = 240.dp),
+                fontSize = 14.sp,
+                color = if (focused) Color.White else EditorMuted,
+                textAlign = TextAlign.End,
+            )
+        }
+        trailing()
+    }
+}
+
+private fun Modifier.editorRowSurface(focused: Boolean): Modifier = fillMaxWidth()
+    .background(if (focused) Color(0xFF252529) else Color.Transparent, EditorRowShape)
+    .border(1.dp, if (focused) Color.White else Color.Transparent, EditorRowShape)
+
+private fun Modifier.editorRowPadding(): Modifier = heightIn(min = 52.dp).padding(horizontal = 16.dp, vertical = 8.dp)
+
+@Composable
+private fun EditorDisclosure(expanded: Boolean) {
+    Text(
+        if (expanded) "\u2303" else "\u2304",
+        color = EditorMuted,
+        fontSize = 17.sp,
+        modifier = Modifier.clearAndSetSemantics {},
     )
 }
+
+@Composable
+private fun toggleValue(enabled: Boolean): String =
+    localizedStringResource(if (enabled) StringsR.string.settings_on else StringsR.string.settings_off)
+
+@Composable
+private fun subtitleLabel(preference: SubtitlePreference): String = localizedStringResource(
+    when (preference) {
+        SubtitlePreference.OFF -> StringsR.string.settings_off
+        SubtitlePreference.SPANISH -> StringsR.string.settings_spanish
+        SubtitlePreference.ENGLISH -> StringsR.string.settings_english
+    },
+)

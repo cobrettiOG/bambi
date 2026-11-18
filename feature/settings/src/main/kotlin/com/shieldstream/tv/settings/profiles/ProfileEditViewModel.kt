@@ -102,8 +102,14 @@ class ProfileEditViewModel @Inject constructor(
         edit { it.copy(profile = it.profile.copy(hiddenCategories = next), confirmDelete = false) }
     }
 
-    fun showAllCategories() = edit {
-        it.copy(profile = it.profile.copy(hiddenCategories = emptySet()), confirmDelete = false)
+    fun toggleAllCategories() = edit { state ->
+        val categories = Category.entries
+        val hidden = if (categories.none { it.name in state.profile.hiddenCategories }) {
+            categories.filterNot { it == Category.ACCLAIMED }.map { it.name }.toSet()
+        } else {
+            state.profile.hiddenCategories - categories.map { it.name }.toSet()
+        }
+        state.copy(profile = state.profile.copy(hiddenCategories = hidden), confirmDelete = false)
     }
 
     fun setPin(pin: String) = edit { it.copy(profile = it.profile.copy(pinHash = ProfilePin.hash(it.profile.id, pin)), confirmRemovePin = false) }

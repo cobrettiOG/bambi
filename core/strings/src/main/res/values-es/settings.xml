@@ -3,6 +3,7 @@
     <string name="settings_home_categories">Categorías del Inicio</string>
     <string name="settings_ok_shows_or_hides_each_one_back">OK muestra u oculta cada una. Atrás para terminar. Siempre queda al menos una.</string>
     <string name="settings_show_all">Mostrar todas</string>
+    <string name="settings_hide_all">Ocultar todas</string>
     <string name="settings_done">Listo</string>
     <string name="settings_add_profile">Añadir perfil</string>
     <string name="settings_edit_profile">Editar perfil</string>
@@ -287,4 +288,15 @@
     <string name="photo_page_sending">Enviando…</string>
     <string name="photo_page_done">¡Listo! Ya está en la tele.</string>
     <string name="photo_page_error">No se pudo enviar. Inténtalo de nuevo.</string>
+    <string name="profile_editor_identity">Identidad</string>
+    <string name="profile_editor_language_playback">Idioma y reproducción</string>
+    <string name="profile_editor_privacy_content">Privacidad y contenido</string>
+    <string name="profile_editor_actions">Acciones</string>
+    <string name="profile_editor_kids">Perfil infantil</string>
+    <string name="profile_editor_categories">Categorías del Inicio</string>
+    <string name="profile_editor_spanish_only">Solo fuentes en español</string>
+    <string name="profile_editor_spanish_first">Priorizar fuentes en español</string>
+    <string name="profile_editor_wait">Espera un momento</string>
+    <string name="profile_editor_not_connected">Sin conectar</string>
+    <string name="profile_editor_color_number">Color %1$d</string>
 </resources>
