@@ -8,7 +8,6 @@ import com.shieldstream.tv.domain.TraktRepository
 import com.shieldstream.tv.model.Category
 import com.shieldstream.tv.model.Profile
 import com.shieldstream.tv.model.ProfilePin
-import com.shieldstream.tv.model.ProfileTheme
 import com.shieldstream.tv.model.SubtitlePreference
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,8 +74,6 @@ class ProfileEditViewModel @Inject constructor(
     fun setAvatar(index: Int) = edit { it.copy(profile = it.profile.copy(avatar = index, avatarImage = null), confirmDelete = false) }
 
     fun setAvatarImage(url: String?) = edit { it.copy(profile = it.profile.copy(avatarImage = url), confirmDelete = false) }
-
-    fun setTheme(theme: ProfileTheme) = edit { it.copy(profile = it.profile.copy(theme = theme), confirmDelete = false) }
 
     fun setKids(kids: Boolean) = edit {
         it.copy(
