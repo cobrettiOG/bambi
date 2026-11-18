@@ -11,7 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -64,43 +64,17 @@ fun AppNavHost(
     val navController = rememberNavController()
     val gate: SetupGateViewModel = hiltViewModel()
     val watchNextNavigation: WatchNextNavigationViewModel = hiltViewModel()
-    // Al abrir en frío, la intro de Bambi (mientras se precarga el Inicio) va ENCIMA de "¿Quién está viendo?", que ya
-    // está debajo: al terminar, la película avanza y el fotograma siguiente es esa pantalla (reveal 0→1, IntroReveal).
-    val start = remember { if (gate.needsSetup) "setup" else "profiles" }
-    var coldIntro by remember { mutableStateOf(!gate.needsSetup) }
-    var reveal by remember { mutableFloatStateOf(if (coldIntro) 0f else 1f) }
-    // Para que el gato vaya fluido, lo pesado (montar la navegación y "¿Quién está viendo?") se hace con la intro
-    // quieta en rojo: primero se pinta la intro, luego se monta lo de debajo y, ya montado, arranca la animación.
-    var hostAllowed by remember { mutableStateOf(!coldIntro) }
-    var hostComposed by remember { mutableStateOf(!coldIntro) }
-    // Hasta que arranca la animación, lo de debajo se pinta en su sitio (tapado por la intro, que es opaca): así la
-    // GPU ya lo tiene preparado y no da un tirón la primera vez que aparece en el fotograma de la película.
-    var introRunning by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        if (!hostAllowed) {
-            withFrameNanos { }
-            withFrameNanos { }
-            hostAllowed = true
-        }
-    }
-    // La ventana arranca con el rojo de la intro (tema) para que no haya negro mientras abre la app; en cuanto la
-    // intro termina (o si no hay intro) vuelve a negro, que es lo que debe asomar en las transiciones.
-    val activity = LocalContext.current as? android.app.Activity
-    LaunchedEffect(coldIntro) {
-        if (!coldIntro) activity?.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK))
-    }
+    var setupPending by rememberSaveable { mutableStateOf(gate.needsSetup) }
+    var reveal by remember { mutableFloatStateOf(1f) }
     val intro: IntroViewModel = hiltViewModel()
-    // Mientras se ve la intro, la precarga deja para después lo que no corre prisa (ver HomePreloader.setUiBusy).
-    LaunchedEffect(coldIntro) {
-        intro.setUiBusy(coldIntro)
-        if (!coldIntro) {
-            kotlinx.coroutines.delay(ICON_WARM_DELAY_MS)
-            intro.warmAllProfileIcons()
-        }
+    LaunchedEffect(setupPending) {
+        if (!setupPending) intro.start()
+    }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(ICON_WARM_DELAY_MS)
+        intro.warmAllProfileIcons()
     }
     val request by watchNextRequest.collectAsState()
-    // Si se abre desde "Seguir viendo" de Android TV, la intro es más corta.
-    val quickIntro = remember { watchNextRequest.value != null }
     val currentEntry by navController.currentBackStackEntryFlow.collectAsState(initial = null)
 
     LaunchedEffect(request?.requestedAtNs) {
@@ -126,28 +100,29 @@ fun AppNavHost(
         navController.navigate("main") { popUpTo(navController.graph.id) { inclusive = true } }
     }
 
+    val enterSelectedProfile = {
+        if (intro.isReady()) toMainFresh() else navController.navigate("profile_loading")
+    }
+    val finishSetup = {
+        setupPending = false
+        enterSelectedProfile()
+    }
+
     Box(Modifier.fillMaxSize()) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .graphicsLayer {
-                // Durante la salida de la intro, esta pantalla es el fotograma siguiente de la tira de película.
-                if (coldIntro && !introRunning) return@graphicsLayer
-                val s = IntroReveal.scale(reveal)
-                scaleX = s
-                scaleY = s
-                translationY = size.height * IntroReveal.appOffset(reveal)
-            },
+    NavHost(
+        navController = navController,
+        startDestination = "profiles",
+        modifier = Modifier.fillMaxSize().graphicsLayer {
+            val scale = IntroReveal.scale(reveal)
+            scaleX = scale
+            scaleY = scale
+            translationY = size.height * IntroReveal.appOffset(reveal)
+        },
     ) {
-    if (hostAllowed) {
-    NavHost(navController = navController, startDestination = start) {
         composable("setup") {
-            val toProfiles = {
-                navController.navigate("profiles") { popUpTo("setup") { inclusive = true } }
-            }
             SetupScreen(
-                onFinish = toProfiles,
-                onExit = toProfiles,
+                onFinish = finishSetup,
+                onExit = finishSetup,
                 onOpenPhone = { navController.navigate("phone_setup") },
             )
         }
@@ -167,14 +142,13 @@ fun AppNavHost(
                 onSelected = {
                     if (entry.isVisible()) {
                         // Si el Inicio de este perfil ya está preparado se entra directo; si no, avatar + anillo.
-                        if (intro.isReady()) toMainFresh() else navController.navigate("profile_loading")
+                        if (setupPending) navController.navigate("setup") else enterSelectedProfile()
                     }
                 },
                 onEdit = { id -> if (entry.isVisible()) navController.navigate("profile_edit/$id") },
                 onAdd = { if (entry.isVisible()) navController.navigate("profile_edit/${ProfileEditViewModel.NEW}") },
             )
-            // El aviso de actualización es un diálogo (va por encima de todo): que espere a que acabe la intro.
-            if (!coldIntro) UpdatePrompt()
+            if (!setupPending) UpdatePrompt()
         }
         composable("profile_edit/{id}") { entry ->
             ProfileEditScreen(
@@ -307,7 +281,7 @@ fun AppNavHost(
                     if (language != Lang.current) {
                         restartApp(context)
                     } else {
-                        navController.navigate("profiles") { popUpTo("setup") { inclusive = true } }
+                        finishSetup()
                     }
                 },
             )
@@ -327,27 +301,7 @@ fun AppNavHost(
             )
         }
     }
-    LaunchedEffect(Unit) {
-        withFrameNanos { }
-        withFrameNanos { }
-        hostComposed = true
-    }
-    }
-    }
-    if (coldIntro) {
-        IntroScreen(
-            onStartPreload = intro::start,
-            awaitReady = intro::awaitReady,
-            onFinished = { coldIntro = false },
-            quick = quickIntro,
-            onReveal = { reveal = it },
-            fadeFromBlack = false,
-            holdStart = !hostComposed,
-            onAnimationStart = { introRunning = true },
-        )
-    } else {
-        ResumeIntroOverlay(resumeIntro, currentEntry?.destination?.route, intro, onResumeIntroDone) { reveal = it }
-    }
+    ResumeIntroOverlay(resumeIntro, currentEntry?.destination?.route, intro, onResumeIntroDone) { reveal = it }
     }
 }
 

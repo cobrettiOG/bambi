@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
 
     private val watchNextRequest = MutableStateFlow<WatchNextRequest?>(null)
 
-    /** Intro al volver a la app desde segundo plano (no en el arranque, que ya empieza con ella). */
+    /** Intro al volver a la app desde segundo plano. */
     private val resumeIntro = MutableStateFlow<ResumeIntro?>(null)
     private var stoppedAt = 0L
 
