@@ -2,14 +2,15 @@ package com.shieldstream.tv.settings.profiles
 
 import com.shieldstream.tv.ui.theme.AppColors
 
+import com.shieldstream.tv.settings.R as SettingsR
 import com.shieldstream.tv.strings.R as StringsR
 import com.shieldstream.tv.strings.localizedStringResource
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,6 +36,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,7 +50,6 @@ import com.shieldstream.tv.model.ProfileManagement
 import com.shieldstream.tv.ui.R
 import com.shieldstream.tv.ui.component.AppIcons
 import com.shieldstream.tv.ui.component.ProfileAvatar
-import com.shieldstream.tv.ui.component.TvButton
 import com.shieldstream.tv.ui.component.onBackKey
 import com.shieldstream.tv.ui.component.tvClickable
 import kotlinx.coroutines.delay
@@ -65,7 +66,7 @@ fun ProfilePickerScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val ready = state as? ProfilesUiState.Ready ?: run {
-        Box(Modifier.fillMaxSize().background(Color.Black))
+        Box(Modifier.fillMaxSize().background(PickerBackground))
         return
     }
     var manage by remember { mutableStateOf(false) }
@@ -99,17 +100,14 @@ fun ProfilePickerScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(ProfileBackground)
+            .background(PickerBackground)
             .onBackKey(enabled = manage) { manage = false },
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.align(Alignment.TopStart).padding(start = 48.dp, top = 32.dp),
-        ) {
-            Image(painterResource(R.drawable.bambi_logo), contentDescription = "Bambi", modifier = Modifier.size(40.dp))
-            Spacer(Modifier.width(12.dp))
-            Image(painterResource(R.drawable.bambi_wordmark), contentDescription = null, modifier = Modifier.height(22.dp))
-        }
+        Image(
+            painter = painterResource(R.drawable.bambi_logo),
+            contentDescription = "Bambi",
+            modifier = Modifier.align(Alignment.TopStart).padding(start = 48.dp, top = 34.dp).size(30.dp),
+        )
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -118,11 +116,12 @@ fun ProfilePickerScreen(
             Text(
                 if (manage) localizedStringResource(StringsR.string.settings_manage_profiles) else localizedStringResource(StringsR.string.settings_who_s_watching),
                 color = Color.White,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 36.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(44.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(26.dp), verticalAlignment = Alignment.Top) {
+            Spacer(Modifier.height(36.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
                 ready.profiles.forEach { profile ->
                     ProfileTile(
                         profile = profile,
@@ -145,8 +144,8 @@ fun ProfilePickerScreen(
                 }
                 if (ready.canAdd) AddTile(onClick = { requestManagement(ManagementAction.ADD) })
             }
-            Spacer(Modifier.height(56.dp))
-            TvButton(
+            Spacer(Modifier.height(36.dp))
+            PickerAction(
                 text = if (manage) localizedStringResource(StringsR.string.settings_done) else localizedStringResource(StringsR.string.settings_manage_profiles),
                 icon = if (manage) AppIcons.Check else AppIcons.Edit,
                 onClick = {
@@ -212,12 +211,78 @@ fun ProfilePickerScreen(
 
 private enum class ManagementAction { MANAGE, ADD }
 
+private val PickerBackground = Color(0xFF101114)
 private val TileSize = 128.dp
+private val TileShape = RoundedCornerShape(18.dp)
+private val TileLabel = Color(0xFFB8BAC2)
 
 @Composable
 private fun ProfileTile(profile: Profile, manage: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    PickerTile(label = profile.name, kids = profile.kids, modifier = modifier, onClick = onClick, metadata = {
+        if (profile.traktUser != null) {
+            Text("Trakt ?", color = AppColors.Success.copy(alpha = 0.8f), fontSize = 12.sp)
+        }
+        if (profile.locked) {
+            Icon(
+                AppIcons.Lock,
+                contentDescription = localizedStringResource(StringsR.string.settings_pin_protected),
+                tint = TileLabel,
+                modifier = Modifier.size(13.dp),
+            )
+        }
+    }) {
+        ProfileAvatar(
+            initial = profile.initial,
+            avatar = profile.avatar,
+            size = TileSize,
+            shape = TileShape,
+            image = profile.avatarImage,
+        )
+        if (manage) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .size(26.dp)
+                    .background(PickerBackground, RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(AppIcons.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddTile(onClick: () -> Unit) {
+    PickerTile(label = localizedStringResource(StringsR.string.settings_add_profile), onClick = onClick) { focused ->
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color.White.copy(alpha = if (focused) 0.08f else 0.04f), TileShape)
+                .border(1.dp, Color.White.copy(alpha = 0.12f), TileShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                AppIcons.Add,
+                contentDescription = null,
+                tint = if (focused) Color.White else TileLabel,
+                modifier = Modifier.size(30.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PickerTile(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    kids: Boolean = false,
+    metadata: @Composable () -> Unit = {},
+    content: @Composable BoxScope.(Boolean) -> Unit,
+) {
     var focused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (focused) 1.1f else 1f, label = "tileScale")
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -227,88 +292,68 @@ private fun ProfileTile(profile: Profile, manage: Boolean, onClick: () -> Unit, 
     ) {
         Box(
             Modifier
+                .size(TileSize)
                 .graphicsLayer {
+                    val scale = if (focused) 1.04f else 1f
                     scaleX = scale
                     scaleY = scale
                 }
-                .border(4.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(TileSize * 0.16f))
-                .padding(6.dp),
+                .border(1.5.dp, if (focused) Color.White else Color.Transparent, TileShape),
         ) {
-            ProfileAvatar(initial = profile.initial, avatar = profile.avatar, size = TileSize, image = profile.avatarImage)
-            if (manage) {
-                Box(
-                    Modifier
-                        .size(TileSize)
-                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(TileSize * 0.14f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(AppIcons.Edit, contentDescription = null, tint = Color.White, modifier = Modifier.size(44.dp))
-                }
+            content(focused)
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val labelColor = if (focused) Color.White else TileLabel
+            Text(
+                text = label,
+                modifier = Modifier.weight(1f, fill = false),
+                color = labelColor,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+            if (kids) {
+                Icon(
+                    painter = painterResource(SettingsR.drawable.ic_child_profile),
+                    contentDescription = localizedStringResource(StringsR.string.settings_kids),
+                    tint = labelColor,
+                    modifier = Modifier.size(16.dp),
+                )
             }
         }
-        Spacer(Modifier.height(16.dp))
-        Text(
-            profile.name,
-            color = if (focused) Color.White else ProfileMuted,
-            fontSize = 20.sp,
-            fontWeight = if (focused) FontWeight.Bold else FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
-        if (profile.traktUser != null || profile.kids || profile.locked) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (profile.traktUser != null) {
-                    // Green reads as "linked/OK" here; Trakt's brand red looked like a warning.
-                    Text("Trakt ✓", color = AppColors.Success.copy(alpha = if (focused) 1f else 0.75f), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
-                if (profile.kids) {
-                    Text(localizedStringResource(StringsR.string.settings_kids), color = Color(0xFF56CCF2).copy(alpha = if (focused) 1f else 0.75f), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
-                if (profile.locked) {
-                    Icon(AppIcons.Lock, contentDescription = localizedStringResource(StringsR.string.settings_pin_protected), tint = ProfileMuted, modifier = Modifier.size(14.dp))
-                }
-            }
+        Row(
+            modifier = Modifier.height(24.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            metadata()
         }
     }
 }
 
 @Composable
-private fun AddTile(onClick: () -> Unit) {
+private fun PickerAction(text: String, icon: ImageVector, onClick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (focused) 1.1f else 1f, label = "addScale")
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    val shape = RoundedCornerShape(10.dp)
+    val contentColor = if (focused) Color.White else TileLabel
+    Row(
         modifier = Modifier
-            .width(TileSize + 20.dp)
             .onFocusChanged { focused = it.isFocused }
-            .tvClickable(onClick = onClick),
+            .background(Color.White.copy(alpha = if (focused) 0.08f else 0.04f), shape)
+            .border(1.dp, if (focused) Color.White else Color.White.copy(alpha = 0.12f), shape)
+            .tvClickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(
-            Modifier
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                }
-                .border(4.dp, if (focused) Color.White else Color.Transparent, RoundedCornerShape(TileSize * 0.16f))
-                .padding(6.dp),
-        ) {
-            Box(
-                Modifier
-                    .size(TileSize)
-                    .background(Color.White.copy(alpha = if (focused) 0.18f else 0.08f), RoundedCornerShape(TileSize * 0.14f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(AppIcons.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(64.dp))
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        Text(
-            localizedStringResource(StringsR.string.settings_add_profile),
-            color = if (focused) Color.White else ProfileMuted,
-            fontSize = 20.sp,
-            fontWeight = if (focused) FontWeight.Bold else FontWeight.Medium,
-        )
+        Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(16.dp))
+        Text(text, color = contentColor, fontSize = 15.sp, fontWeight = FontWeight.Medium)
     }
 }
 
