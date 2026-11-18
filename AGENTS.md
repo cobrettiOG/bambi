@@ -115,3 +115,15 @@ ANDROID_HOME="$HOME/Library/Android/sdk" bash ./gradlew test :app:assembleReleas
 Unit tests exist mainly in `core:model`, `core:domain`, `core:data`, and `core:media`. Add focused tests there for pure rules, persistence mappings, date filtering, and source/playback policy. There is no comprehensive Compose/UI or end-to-end suite. Compilation and unit tests do not validate D-pad focus, direct playback, notification delivery, or setup layout; verify those on a device.
 
 Before changing code, inspect `git status` and relevant diffs. Multiple agents may edit this tree; do not revert unrelated work. Keep one measurable change per test build when evaluating performance.
+
+## Custom Redesign Project Guidelines
+
+- Rediseña por completo la interfaz visual de Bambi en la rama `redesign` y conserva todas sus funcionalidades originales, su arquitectura y su rendimiento.
+- Escribe en español todas las respuestas y explicaciones dirigidas al desarrollador.
+- Prioriza los cambios visuales en Jetpack Compose, tanto en los componentes compartidos de `core:ui` como en las pantallas de `feature:*`. Evita cambios innecesarios en la lógica de negocio, la reproducción, los servicios y la persistencia.
+- Conserva la navegación con mando, el sistema de foco de Android TV y las optimizaciones de rendimiento existentes.
+- Añade dependencias solo si existe una justificación técnica.
+- Mantén los textos visibles de la aplicación en español e inglés mediante el sistema existente `tr("Español", "English")`.
+- Favorece cambios pequeños y verificables que faciliten integrar futuras actualizaciones del repositorio original `grodri99/bambi`.
+- Antes de modificar una funcionalidad existente, explica al desarrollador qué archivos y comportamientos se verán afectados.
+- No hagas commits ni pushes sin autorización explícita del desarrollador.
