@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -50,8 +51,10 @@ import kotlinx.coroutines.delay
 fun MyListScreen(
     onItemClick: (CatalogItem) -> Unit,
     viewModel: MyListViewModel = hiltViewModel(),
+    keepTopBarFocus: Boolean = false,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val preserveMenuFocus by rememberUpdatedState(keepTopBarFocus)
     val cardRequester = remember { FocusRequester() }
     var lastCardKey by rememberSaveable { mutableStateOf<String?>(null) }
     var cardToRestore by remember { mutableStateOf<String?>(null) }
@@ -60,7 +63,8 @@ fun MyListScreen(
         if (state !is MyListUiState.Content || lastCardKey == null) return@LaunchedEffect
         withFrameNanos { }
         repeat(4) {
-            if (runCatching { cardRequester.requestFocus() }.isSuccess) return@LaunchedEffect
+            if (preserveMenuFocus) return@LaunchedEffect
+            if (runCatching { cardRequester.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
             delay(60)
         }
     }

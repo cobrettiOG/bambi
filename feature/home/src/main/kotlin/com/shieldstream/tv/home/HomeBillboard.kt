@@ -27,9 +27,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +46,6 @@ import com.shieldstream.tv.model.CatalogItem
 import com.shieldstream.tv.model.Category
 import com.shieldstream.tv.model.FeaturedItem
 import com.shieldstream.tv.model.MediaType
-import com.shieldstream.tv.ui.component.onBackKey
 import com.shieldstream.tv.ui.component.SoftBackdropImage
 import com.shieldstream.tv.ui.component.requestFocusWithRetry
 import com.shieldstream.tv.ui.theme.LocalSoftBackdrops
@@ -69,22 +67,16 @@ internal fun Billboard(
     onSurprise: () -> Unit,
     onPlaySomething: () -> Unit,
     onEnterRows: () -> Unit,
-    topBar: @Composable (Modifier) -> Unit,
     topBarRequester: FocusRequester,
-    focusTopBar: () -> Unit,
-    preferTopBarFocus: Boolean,
-    onTopBarFocusConsumed: () -> Unit,
+    keepTopBarFocus: Boolean,
 ) {
     val heroRequester = remember { FocusRequester() }
     val chipsRequester = remember { FocusRequester() }
-    var topBarFocused by remember { mutableStateOf(false) }
+    val preserveMenuFocus by rememberUpdatedState(keepTopBarFocus)
     LaunchedEffect(Unit) {
         withFrameNanos { }
         when {
-            preferTopBarFocus -> {
-                focusTopBar()
-                onTopBarFocusConsumed()
-            }
+            preserveMenuFocus -> Unit
             initialFocus == TopFocus.HERO && featured.isNotEmpty() -> heroRequester.requestFocusWithRetry()
             else -> chipsRequester.requestFocusWithRetry()
         }
@@ -92,10 +84,8 @@ internal fun Billboard(
     Column(
         Modifier
             .fillMaxSize()
-            .background(BillboardBackground)
-            .onBackKey(enabled = !topBarFocused) { focusTopBar() },
+            .background(BillboardBackground),
     ) {
-        topBar(Modifier.onFocusChanged { topBarFocused = it.hasFocus })
         if (featured.isNotEmpty()) {
             FeaturedCarousel(
                 items = featured,

@@ -203,7 +203,6 @@ class SharedComponentsLocaleTest {
             TopBar(
                 selected = TopTab.HOME,
                 onSelect = {},
-                onSettings = {},
                 selectedRequester = FocusRequester(),
             )
         }

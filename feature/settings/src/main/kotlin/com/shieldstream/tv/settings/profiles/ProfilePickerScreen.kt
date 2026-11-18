@@ -31,12 +31,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,11 +67,14 @@ fun ProfilePickerScreen(
     onSelected: () -> Unit,
     onEdit: (String) -> Unit,
     onAdd: () -> Unit,
+    onOpenSettings: () -> Unit,
     viewModel: ProfilesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val ready = state as? ProfilesUiState.Ready ?: run {
-        Box(Modifier.fillMaxSize().background(PickerBackground))
+        Box(Modifier.fillMaxSize().background(PickerBackground)) {
+            PickerSettingsButton(onOpenSettings, Modifier.align(Alignment.TopEnd).padding(top = 28.dp, end = 48.dp))
+        }
         return
     }
     var manage by remember { mutableStateOf(false) }
@@ -90,9 +98,10 @@ fun ProfilePickerScreen(
     var pinFor by remember { mutableStateOf<Pair<Profile, Boolean>?>(null) }
     var pinError by remember { mutableStateOf<String?>(null) }
     val activeRequester = remember { FocusRequester() }
+    val settingsRequester = remember { FocusRequester() }
     LaunchedEffect(manage) {
         repeat(4) {
-            runCatching { activeRequester.requestFocus() }
+            if (runCatching { activeRequester.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
             delay(150)
         }
     }
@@ -107,6 +116,14 @@ fun ProfilePickerScreen(
             painter = painterResource(R.drawable.bambi_logo),
             contentDescription = "Bambi",
             modifier = Modifier.align(Alignment.TopStart).padding(start = 48.dp, top = 34.dp).size(30.dp),
+        )
+
+        PickerSettingsButton(
+            onClick = onOpenSettings,
+            modifier = Modifier.align(Alignment.TopEnd)
+                .padding(top = 28.dp, end = 48.dp)
+                .focusRequester(settingsRequester)
+                .focusProperties { down = activeRequester },
         )
 
         Column(
@@ -139,10 +156,16 @@ fun ProfilePickerScreen(
                                 }
                             }
                         },
-                        modifier = if (profile.id == ready.activeId) Modifier.focusRequester(activeRequester) else Modifier,
+                        modifier = (if (profile.id == ready.activeId) Modifier.focusRequester(activeRequester) else Modifier)
+                            .focusProperties { up = settingsRequester },
                     )
                 }
-                if (ready.canAdd) AddTile(onClick = { requestManagement(ManagementAction.ADD) })
+                if (ready.canAdd) {
+                    AddTile(
+                        onClick = { requestManagement(ManagementAction.ADD) },
+                        modifier = Modifier.focusProperties { up = settingsRequester },
+                    )
+                }
             }
             Spacer(Modifier.height(36.dp))
             PickerAction(
@@ -254,8 +277,8 @@ private fun ProfileTile(profile: Profile, manage: Boolean, onClick: () -> Unit, 
 }
 
 @Composable
-private fun AddTile(onClick: () -> Unit) {
-    PickerTile(label = localizedStringResource(StringsR.string.settings_add_profile), onClick = onClick) { focused ->
+private fun AddTile(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    PickerTile(label = localizedStringResource(StringsR.string.settings_add_profile), modifier = modifier, onClick = onClick) { focused ->
         Box(
             Modifier
                 .fillMaxSize()
@@ -354,6 +377,33 @@ private fun PickerAction(text: String, icon: ImageVector, onClick: () -> Unit) {
     ) {
         Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(16.dp))
         Text(text, color = contentColor, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun PickerSettingsButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(12.dp)
+    val label = localizedStringResource(StringsR.string.common_settings)
+    Box(
+        modifier
+            .size(42.dp)
+            .background(if (focused) Color(0xFF353538) else Color.Transparent, shape)
+            .border(1.dp, if (focused) Color.White else Color.Transparent, shape)
+            .semantics {
+                role = Role.Button
+                contentDescription = label
+            }
+            .onFocusChanged { focused = it.isFocused }
+            .tvClickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            AppIcons.Settings,
+            contentDescription = null,
+            tint = if (focused) Color.White else TileLabel,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 

@@ -22,6 +22,7 @@ import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -56,6 +57,34 @@ class TvFocusTest {
 
     @get:Rule
     val rules: RuleChain = RuleChain.outerRule(registerActivity).around(composeRule)
+
+    @Test
+    fun `top bar traverses series and movies in both directions`() {
+        val activated = mutableListOf<TopTab>()
+        composeRule.setContent {
+            var selected by remember { mutableStateOf(TopTab.EPISODES) }
+            val selectedRequester = remember { FocusRequester() }
+            TopBar(
+                selected = selected,
+                onSelect = { selected = it },
+                selectedRequester = selectedRequester,
+                onTabFocused = {
+                    activated += it
+                    selected = it
+                },
+            )
+            LaunchedEffect(Unit) { selectedRequester.requestFocusWithRetry() }
+        }
+
+        for (key in listOf(Key.DirectionRight, Key.DirectionRight, Key.DirectionRight, Key.DirectionLeft, Key.DirectionLeft)) {
+            composeRule.onRoot().performKeyInput {
+                keyDown(key)
+                keyUp(key)
+            }
+            composeRule.waitForIdle()
+        }
+        assertEquals(listOf(TopTab.TV, TopTab.MOVIES, TopTab.MY_LIST, TopTab.MOVIES, TopTab.TV), activated)
+    }
 
     @Test
     fun `focus retry waits for a target attached after the first request`() {

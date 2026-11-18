@@ -559,7 +559,8 @@ class HomeViewModel @Inject constructor(
     fun load(filter: HomeFilter, force: Boolean = false, silent: Boolean = false) {
         filterFlow.value = filter
         val limit = rowItemLimit.value
-        if (!force && loadedFilter == filter && loadedLimit == limit && _uiState.value is HomeUiState.Content) return
+        // Al volver, la carga inicial del filtro puede seguir en curso.
+        if (!force && loadedFilter == filter && loadedLimit == limit && _uiState.value !is HomeUiState.Error) return
         prefetchJob?.cancel()
         loadedFilter = filter
         loadedLimit = limit

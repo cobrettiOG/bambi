@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -57,11 +56,10 @@ fun HomeScreen(
     onPlaySomething: (CatalogItem, EpisodeTarget?) -> Unit,
     onOpenCategory: (Category) -> Unit,
     onContentReady: () -> Unit = {},
-    topBar: @Composable (Modifier) -> Unit,
+    inRows: Boolean,
+    onRowsChanged: (Boolean) -> Unit,
     topBarRequester: FocusRequester,
-    focusTopBar: () -> Unit,
-    preferTopBarFocus: Boolean,
-    onTopBarFocusConsumed: () -> Unit,
+    keepTopBarFocus: Boolean,
     viewModel: HomeViewModel = hiltViewModel(key = "home_${filter.name}"),
 ) {
     LaunchedEffect(filter) { viewModel.load(filter) }
@@ -70,21 +68,15 @@ fun HomeScreen(
 
     when (val s = state) {
         HomeUiState.Loading -> Column(Modifier.fillMaxSize().background(BillboardBackground)) {
-            topBar(Modifier)
-            LaunchedEffect(Unit) {
-                if (preferTopBarFocus) {
-                    withFrameNanos { }
-                    focusTopBar()
-                }
-            }
             BillboardSkeleton()
         }
         is HomeUiState.Error -> Column(Modifier.fillMaxSize().background(BillboardBackground)) {
-            topBar(Modifier)
+            if (inRows) LaunchedEffect(Unit) { onRowsChanged(false) }
             HomeError(
                 s.message,
                 onRetry = { viewModel.load(filter, force = true) },
                 modifier = Modifier.fillMaxWidth().weight(1f),
+                keepTopBarFocus = keepTopBarFocus,
             )
         }
         is HomeUiState.Content -> {
@@ -123,11 +115,10 @@ fun HomeScreen(
             onRemoveMyList = viewModel::removeFromMyList,
             onMarkUpNextWatched = viewModel::markUpNextWatched,
             onRemoveUpNext = viewModel::removeUpNext,
-            topBar = topBar,
+            inRows = inRows,
+            onRowsChanged = onRowsChanged,
             topBarRequester = topBarRequester,
-            focusTopBar = focusTopBar,
-            preferTopBarFocus = preferTopBarFocus,
-            onTopBarFocusConsumed = onTopBarFocusConsumed,
+            keepTopBarFocus = keepTopBarFocus,
             )
         }
     }
@@ -156,14 +147,12 @@ private fun HomeContent(
     onRemoveMyList: (CatalogItem) -> Unit,
     onMarkUpNextWatched: (CatalogItem, Episode) -> Unit,
     onRemoveUpNext: (CatalogItem, Episode) -> Unit,
-    topBar: @Composable (Modifier) -> Unit,
+    inRows: Boolean,
+    onRowsChanged: (Boolean) -> Unit,
     topBarRequester: FocusRequester,
-    focusTopBar: () -> Unit,
-    preferTopBarFocus: Boolean,
-    onTopBarFocusConsumed: () -> Unit,
+    keepTopBarFocus: Boolean,
 ) {
     // Como en Bambi: el Inicio arranca en la portada (destacados + categorías); ▼ baja a las filas.
-    var inRows by rememberSaveable { mutableStateOf(false) }
     var topFocus by rememberSaveable { mutableStateOf(TopFocus.HERO) }
     val saveable = rememberSaveableStateHolder()
     // Swapping the rows view and the billboard disposes the focused item, and the new view only
@@ -199,11 +188,11 @@ private fun HomeContent(
                 onRemoveUpNext = onRemoveUpNext,
                 onExitTop = {
                     topFocus = TopFocus.CHIPS
-                    switchView { inRows = false }
+                    switchView { onRowsChanged(false) }
                 },
                 onBack = {
                     topFocus = if (featured.isNotEmpty()) TopFocus.HERO else TopFocus.CHIPS
-                    switchView { inRows = false }
+                    switchView { onRowsChanged(false) }
                 },
             )
         } else saveable.SaveableStateProvider("billboard") {
@@ -237,12 +226,9 @@ private fun HomeContent(
                         null -> Unit
                     }
                 },
-                onEnterRows = { if (rows.isNotEmpty()) switchView { inRows = true } },
-                topBar = topBar,
+                onEnterRows = { if (rows.isNotEmpty()) switchView { onRowsChanged(true) } },
                 topBarRequester = topBarRequester,
-                focusTopBar = focusTopBar,
-                preferTopBarFocus = preferTopBarFocus,
-                onTopBarFocusConsumed = onTopBarFocusConsumed,
+                keepTopBarFocus = keepTopBarFocus,
             )
         }
     }

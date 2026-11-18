@@ -13,6 +13,9 @@ import com.shieldstream.tv.model.ProfileTheme
  * Bambi marca progreso, selección, novedades y los indicadores activos.
  */
 object AppColors {
+    /** Bambi brand accent (#E50914), for persistent selection indicators. */
+    val BrandAccent = Color(ProfileTheme.BAMBI.accent)
+
     /** Full-screen canvas. */
     val Background = Color(0xFF0E0E10)
 
@@ -32,7 +35,7 @@ object AppColors {
     val Placeholder = Color(0xFF232327)
 
     /** Acento del perfil activo: progreso, selección e indicadores activos. */
-    var Accent by mutableStateOf(Color(0xFFE50914))
+    var Accent by mutableStateOf(BrandAccent)
         private set
 
     /** Variante oscura del acento (degradados y estados secundarios). */
@@ -47,7 +50,7 @@ object AppColors {
      * The single accent: "new" dots and counts, progress bars, the active rail marker and small
      * section labels. Keep it to small details; large accent areas compete with the artwork.
      */
-    var Highlight by mutableStateOf(Color(0xFFE50914))
+    var Highlight by mutableStateOf(BrandAccent)
         private set
 
     /** Restricted age ratings only. */

@@ -2,6 +2,7 @@ package com.shieldstream.tv.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,7 +40,6 @@ fun MainScreen(
     onOpenNewEpisode: (CatalogItem, Episode) -> Unit,
     onUpNext: (CatalogItem, Episode) -> Unit,
     onPlaySomething: (CatalogItem, EpisodeTarget?) -> Unit,
-    onOpenSettings: () -> Unit,
     onOpenDownloads: () -> Unit = {},
     profileInitial: String? = null,
     profileAvatar: Int = 0,
@@ -48,7 +48,7 @@ fun MainScreen(
 ) {
     var tab by rememberSaveable { mutableStateOf(TopTab.HOME) }
     var category by rememberSaveable { mutableStateOf<Category?>(null) }
-    var focusMenuAfterSwitch by remember { mutableStateOf(false) }
+    var inRows by rememberSaveable { mutableStateOf(false) }
     var topBarFocused by remember { mutableStateOf(false) }
     var showExitConfirmation by remember { mutableStateOf(false) }
     val topBarRequester = remember { FocusRequester() }
@@ -63,70 +63,61 @@ fun MainScreen(
     val episodeState by episodeCenter.uiState.collectAsState()
     LaunchedEffect(tab) { if (tab == TopTab.EPISODES) episodeCenter.activate() }
     val focusTopBar: () -> Unit = { runCatching { topBarRequester.requestFocus() } }
-    val topBar: @Composable (Modifier) -> Unit = { modifier ->
-        TopBar(
-            selected = tab,
-            onSelect = { selected ->
-                if (selected != tab) {
-                    tab = selected
-                    focusMenuAfterSwitch = selected != TopTab.SEARCH && selected != TopTab.MY_LIST && selected != TopTab.EPISODES
-                }
-            },
-            onSettings = onOpenSettings,
-            selectedRequester = topBarRequester,
-            newEpisodeCount = (episodeState as? EpisodeCenterUiState.Content)?.newEpisodeCount ?: 0,
-            modifier = modifier.onFocusChanged { topBarFocused = it.hasFocus },
-            profileInitial = profileInitial,
-            profileAvatar = profileAvatar,
-            profileImage = profileImage,
-            onProfile = onSwitchProfile,
-            downloads = downloadIndicatorState(downloadList),
-            onDownloads = onOpenDownloads,
-        )
-    }
-
-    BackHandler(enabled = showExitConfirmation || shouldRequestExit(category != null, topBarFocused)) {
+    BackHandler(enabled = showExitConfirmation || shouldRequestExit(category != null, !inRows && topBarFocused)) {
         showExitConfirmation = !showExitConfirmation
     }
 
     val saveable = rememberSaveableStateHolder()
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         val openCategory = category
-        when {
-            openCategory != null -> CategoryScreen(
+        if (openCategory != null) {
+            CategoryScreen(
                 category = openCategory,
                 filter = filter,
                 onItemClick = onOpenItem,
                 onBack = { category = null },
             )
-            tab == TopTab.SEARCH || tab == TopTab.MY_LIST || tab == TopTab.EPISODES -> {
-                Column(Modifier.fillMaxSize().onBackKey(enabled = !topBarFocused) { focusTopBar() }) {
-                    topBar(Modifier)
-                    Box(Modifier.fillMaxWidth().weight(1f)) {
+        } else {
+            Column(Modifier.fillMaxSize().onBackKey(enabled = !inRows && !topBarFocused) { focusTopBar() }) {
+                if (!inRows) {
+                    TopBar(
+                        selected = tab,
+                        onSelect = { tab = it },
+                        onTabFocused = { if (it != TopTab.SEARCH) tab = it },
+                        selectedRequester = topBarRequester,
+                        newEpisodeCount = (episodeState as? EpisodeCenterUiState.Content)?.newEpisodeCount ?: 0,
+                        modifier = Modifier.onFocusChanged { topBarFocused = it.hasFocus }.focusGroup(),
+                        profileInitial = profileInitial,
+                        profileAvatar = profileAvatar,
+                        profileImage = profileImage,
+                        onProfile = onSwitchProfile,
+                        downloads = downloadIndicatorState(downloadList),
+                        onDownloads = onOpenDownloads,
+                    )
+                }
+                Box(Modifier.fillMaxWidth().weight(1f)) {
+                    saveable.SaveableStateProvider("tab_${tab.name}") {
                         when (tab) {
                             TopTab.SEARCH -> SearchScreen(onItemClick = onOpenItem)
                             TopTab.EPISODES -> EpisodeCenterScreen(onOpenEpisode = onOpenNewEpisode, viewModel = episodeCenter)
-                            else -> saveable.SaveableStateProvider("tab_${tab.name}") { MyListScreen(onItemClick = onOpenItem) }
+                            TopTab.MY_LIST -> MyListScreen(onItemClick = onOpenItem, keepTopBarFocus = topBarFocused)
+                            else -> HomeScreen(
+                                filter = filter,
+                                onItemClick = onOpenItem,
+                                onContinueClick = onContinue,
+                                onNewEpisodeClick = onOpenNewEpisode,
+                                onUpNextClick = onUpNext,
+                                onPlaySomething = onPlaySomething,
+                                onOpenCategory = { category = it },
+                                onContentReady = episodeCenter::activate,
+                                inRows = inRows,
+                                onRowsChanged = { inRows = it },
+                                topBarRequester = topBarRequester,
+                                keepTopBarFocus = topBarFocused,
+                            )
                         }
                     }
                 }
-            }
-            else -> saveable.SaveableStateProvider("tab_${tab.name}") {
-                HomeScreen(
-                    filter = filter,
-                    onItemClick = onOpenItem,
-                    onContinueClick = onContinue,
-                    onNewEpisodeClick = onOpenNewEpisode,
-                    onUpNextClick = onUpNext,
-                    onPlaySomething = onPlaySomething,
-                    onOpenCategory = { category = it },
-                    onContentReady = episodeCenter::activate,
-                    topBar = topBar,
-                    topBarRequester = topBarRequester,
-                    focusTopBar = focusTopBar,
-                    preferTopBarFocus = focusMenuAfterSwitch,
-                    onTopBarFocusConsumed = { focusMenuAfterSwitch = false },
-                )
             }
         }
         if (showExitConfirmation) {

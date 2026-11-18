@@ -8,9 +8,7 @@ import com.shieldstream.tv.strings.localizedLabel
 import com.shieldstream.tv.strings.localizedTitle
 import com.shieldstream.tv.ui.theme.LocalHighResBackdrops
 import com.shieldstream.tv.ui.theme.LocalLightweightUi
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -44,13 +42,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
@@ -75,12 +74,12 @@ import com.shieldstream.tv.ui.component.loopingItems
 import com.shieldstream.tv.ui.component.rememberLoopingRowState
 import com.shieldstream.tv.ui.component.tvClickable
 import com.shieldstream.tv.ui.theme.AppColors
+import com.shieldstream.tv.ui.theme.AppSpacing
 import kotlinx.coroutines.delay
 import java.util.Locale
 
 private val UiLocale: Locale get() = Lang.locale
 private val NetflixRed = Color(0xFFE50914)
-private val CardShape = RoundedCornerShape(18.dp)
 
 /**
  * Portada grande del Inicio: los destacados de la semana. ◀ ▶ cambia de destacado (en bucle) y además
@@ -108,9 +107,10 @@ internal fun FeaturedCarousel(
     Box(
         modifier
             .fillMaxWidth()
-            .padding(horizontal = 28.dp)
-            .clip(CardShape)
-            .border(if (focused) 3.dp else 0.dp, if (focused) Color.White else Color.Transparent, CardShape)
+            .drawWithContent {
+                // Clip the draw itself so the backdrop stays within this viewport after slot reuse.
+                clipRect { this@drawWithContent.drawContent() }
+            }
             .onFocusChanged { focused = it.isFocused }
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || items.size < 2) return@onPreviewKeyEvent false
@@ -128,13 +128,26 @@ internal fun FeaturedCarousel(
             }
             .tvClickable { onOpen(current.item) },
     ) {
-        Crossfade(targetState = current, animationSpec = tween(500), label = "featured") { featured ->
-            FeaturedSlide(featured)
+        key(current.item.key) { FeaturedSlide(current) }
+        if (focused) {
+            Row(
+                modifier = Modifier.align(Alignment.BottomStart)
+                    .padding(start = AppSpacing.ScreenEdge, bottom = 18.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(width = 16.dp, height = 3.dp).background(AppColors.BrandAccent, CircleShape))
+                Text(
+                    text = "OK \u00b7 " + localizedStringResource(StringsR.string.home_view_details),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.White,
+                )
+            }
         }
         if (items.size > 1) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
             ) {
                 items.indices.forEach { i ->
                     Box(
@@ -153,7 +166,7 @@ internal fun FeaturedCarousel(
 @Composable
 private fun FeaturedSlide(featured: FeaturedItem) {
     val item = featured.item
-    Box(Modifier.fillMaxSize().background(Color(0xFF111114))) {
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
         AsyncImage(
             model = BackdropUrls.fullScreen(
                 url = item.backdropUrl,
@@ -167,19 +180,29 @@ private fun FeaturedSlide(featured: FeaturedItem) {
         Box(
             Modifier.fillMaxSize().background(
                 Brush.horizontalGradient(
-                    0f to Color.Black.copy(alpha = 0.85f),
-                    0.45f to Color.Black.copy(alpha = 0.35f),
-                    0.75f to Color.Transparent,
+                    0f to Color.Black.copy(alpha = 0.78f),
+                    0.40f to Color.Black.copy(alpha = 0.42f),
+                    0.82f to Color.Transparent,
                 ),
             ),
         )
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.5f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.85f))))
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(
+                    0f to Color.Black.copy(alpha = 0.20f),
+                    0.22f to Color.Transparent,
+                    0.48f to Color.Transparent,
+                    0.8f to Color.Black.copy(alpha = 0.65f),
+                    1f to Color.Black,
+                ),
+            ),
+        )
 
         Column(
             Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth(0.6f)
-                .padding(start = 32.dp, bottom = 28.dp),
+                .padding(start = AppSpacing.ScreenEdge, bottom = 52.dp),
         ) {
             if (featured.logoUrl != null) {
                 AsyncImage(
@@ -205,7 +228,7 @@ private fun FeaturedSlide(featured: FeaturedItem) {
         }
         BadgeChip(
             badge = featured.badge,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 28.dp, bottom = 28.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = AppSpacing.ScreenEdge, bottom = 52.dp),
         )
     }
 }

@@ -142,11 +142,13 @@ fun AppNavHost(
                 onSelected = {
                     if (entry.isVisible()) {
                         // Si el Inicio de este perfil ya está preparado se entra directo; si no, avatar + anillo.
-                        if (setupPending) navController.navigate("setup") else enterSelectedProfile()
+                        if (setupPending && gate.needsSetup) navController.navigate("setup")
+                        else finishSetup()
                     }
                 },
                 onEdit = { id -> if (entry.isVisible()) navController.navigate("profile_edit/$id") },
                 onAdd = { if (entry.isVisible()) navController.navigate("profile_edit/${ProfileEditViewModel.NEW}") },
+                onOpenSettings = { if (entry.isVisible()) navController.navigate("settings") },
             )
             if (!setupPending) UpdatePrompt()
         }
@@ -212,7 +214,6 @@ fun AppNavHost(
                         navController.navigate("details")
                     }
                 },
-                onOpenSettings = { navController.navigate("settings") },
             )
             UpdatePrompt()
         }

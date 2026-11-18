@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -104,11 +105,17 @@ internal fun HomeSkeleton() {
 }
 
 @Composable
-internal fun HomeError(message: String, onRetry: () -> Unit, modifier: Modifier = Modifier.fillMaxSize()) {
+internal fun HomeError(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier.fillMaxSize(),
+    keepTopBarFocus: Boolean = false,
+) {
+    val preserveMenuFocus by rememberUpdatedState(keepTopBarFocus)
     val retryRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         withFrameNanos { }
-        runCatching { retryRequester.requestFocus() }
+        if (!preserveMenuFocus) runCatching { retryRequester.requestFocus() }
     }
     Column(
         modifier.background(AppColors.Background),
