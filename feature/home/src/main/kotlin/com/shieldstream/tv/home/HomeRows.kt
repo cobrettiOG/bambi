@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import com.shieldstream.tv.ui.theme.DisplayFont
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -142,7 +141,7 @@ internal fun RowsBrowser(
                 header?.let {
                     Text(
                         text = it.uppercase(Lang.locale),
-                        fontFamily = DisplayFont,
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 30.sp,
                         color = AppColors.Accent,
                     )

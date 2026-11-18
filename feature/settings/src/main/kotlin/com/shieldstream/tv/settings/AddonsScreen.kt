@@ -42,7 +42,6 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,6 +62,7 @@ import com.shieldstream.tv.ui.component.ProvideMinimalScroll
 import com.shieldstream.tv.ui.component.TvButton
 import com.shieldstream.tv.ui.component.onBackKey
 import com.shieldstream.tv.ui.component.tvClickable
+import com.shieldstream.tv.ui.theme.InterFontFamily
 import com.shieldstream.tv.ui.theme.AppColors
 import com.shieldstream.tv.ui.theme.AppShapes
 
@@ -315,7 +315,12 @@ private fun AddonEditorDialog(
                 onValueChange = { input = it.replace("\n", "") },
                 singleLine = true,
                 enabled = !editor.busy,
-                textStyle = TextStyle(color = Color.White, fontSize = 20.sp, fontFamily = FontFamily.Monospace),
+                textStyle = TextStyle(
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontFamily = InterFontFamily,
+                    fontFeatureSettings = "tnum",
+                ),
                 cursorBrush = SolidColor(Color.White),
                 keyboardOptions = KeyboardOptions(
                     autoCorrectEnabled = false,

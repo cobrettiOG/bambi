@@ -44,7 +44,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shieldstream.tv.domain.SettingsRepository
 import com.shieldstream.tv.ui.component.tvClickable
-import com.shieldstream.tv.ui.theme.DisplayFont
 
 // Ajustes → Inicio, apariencia, idioma, perfiles y avisos.
 
@@ -119,7 +118,7 @@ internal fun HomeRowLimitCard(viewModel: SettingsViewModel = hiltViewModel()) {
                 Arrow("◀", enabled = focused && limit > SettingsRepository.MIN_HOME_ROW_ITEM_LIMIT)
                 Text(
                     "$limit",
-                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.SemiBold,
                     fontSize = 34.sp,
                     color = Color.White,
                     modifier = Modifier.padding(horizontal = 18.dp),

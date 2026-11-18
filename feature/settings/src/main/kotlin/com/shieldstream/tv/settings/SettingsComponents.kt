@@ -36,7 +36,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shieldstream.tv.ui.component.tvClickable
-import com.shieldstream.tv.ui.theme.DisplayFont
 
 // Piezas comunes de Ajustes: colores, títulos de sección y tarjetas genéricas.
 
@@ -60,7 +59,7 @@ internal val SettingsRed = Color(0xFFFF5A5F)
 internal fun SectionTitle(text: String) {
     Text(
         text = text.uppercase(),
-        fontFamily = DisplayFont,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 26.sp,
         color = Color.White.copy(alpha = 0.85f),
         modifier = Modifier.padding(top = 18.dp, bottom = 2.dp, start = 4.dp),

@@ -42,7 +42,6 @@ import com.shieldstream.tv.strings.localizedStringResource
 import com.shieldstream.tv.ui.R
 import com.shieldstream.tv.ui.component.TvButton
 import com.shieldstream.tv.ui.component.onBackKey
-import com.shieldstream.tv.ui.theme.DisplayFont
 
 private val PhoneBackground = Brush.verticalGradient(listOf(Color(0xFF151622), Color.Black))
 private val PhoneMuted = Color.White.copy(alpha = 0.62f)
@@ -91,7 +90,7 @@ fun PhoneConfigScreen(
                             if (mode == PhoneConfigMode.SETUP) StringsR.string.settings_phone_setup_title
                             else StringsR.string.settings_configure_from_phone,
                         ),
-                        fontFamily = DisplayFont,
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 44.sp,
                         color = Color.White,
                     )

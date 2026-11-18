@@ -67,6 +67,7 @@ import com.shieldstream.tv.ui.component.AppIcons
 import com.shieldstream.tv.ui.component.ProfileAvatar
 import com.shieldstream.tv.ui.component.TvButton
 import com.shieldstream.tv.ui.component.tvClickable
+import com.shieldstream.tv.ui.theme.InterFontFamily
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -335,7 +336,12 @@ private fun NameField(value: String, onValueChange: (String) -> Unit, modifier: 
         value = value,
         onValueChange = { onValueChange(it.replace("\n", "")) },
         singleLine = true,
-        textStyle = TextStyle(color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Medium),
+        textStyle = TextStyle(
+            color = Color.White,
+            fontSize = 21.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = InterFontFamily,
+        ),
         cursorBrush = SolidColor(Color.White),
         keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.Words,

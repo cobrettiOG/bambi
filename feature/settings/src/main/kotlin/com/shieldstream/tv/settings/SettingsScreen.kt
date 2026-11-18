@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.platform.LocalContext
 import com.shieldstream.tv.settings.update.UpdateCard
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -46,7 +47,6 @@ import com.shieldstream.tv.domain.ApiService
 import com.shieldstream.tv.domain.DebridService
 import com.shieldstream.tv.ui.component.ProvideMinimalScroll
 import com.shieldstream.tv.ui.component.onBackKey
-import com.shieldstream.tv.ui.theme.DisplayFont
 
 @Composable
 fun SettingsScreen(
@@ -171,7 +171,7 @@ private fun SettingsList(
         ) {
             item {
                 Column(Modifier.padding(bottom = 8.dp)) {
-                    Text(localizedStringResource(StringsR.string.settings_settings), fontFamily = DisplayFont, fontSize = 52.sp, color = Color.White)
+                    Text(localizedStringResource(StringsR.string.settings_settings), fontWeight = FontWeight.SemiBold, fontSize = 52.sp, color = Color.White)
                     Text(
                         localizedStringResource(StringsR.string.settings_service_keys_playback_and_app_version),
                         style = MaterialTheme.typography.bodyLarge,

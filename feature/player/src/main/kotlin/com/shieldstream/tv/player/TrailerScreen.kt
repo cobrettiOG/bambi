@@ -23,8 +23,10 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.core.content.res.ResourcesCompat
 import com.shieldstream.tv.model.Lang
 import com.shieldstream.tv.strings.R as StringsR
+import com.shieldstream.tv.ui.R as UiR
 
 /** Abre el tráiler en la app de YouTube que tenga el sistema (SmartTube incluido) con un enlace normal. */
 fun openTrailerExternally(context: Context, key: String) {
@@ -91,6 +93,7 @@ class TrailerActivity : Activity() {
                     text = getString(StringsR.string.trailer_loading)
                     setTextColor(Color.argb(180, 255, 255, 255))
                     textSize = 16f
+                    typeface = ResourcesCompat.getFont(context, UiR.font.inter_regular)
                     gravity = Gravity.CENTER
                     setPadding(0, 24, 0, 0)
                 },

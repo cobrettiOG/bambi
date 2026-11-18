@@ -63,7 +63,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -83,7 +82,7 @@ import com.shieldstream.tv.ui.R
 import com.shieldstream.tv.ui.component.TvButton
 import com.shieldstream.tv.ui.component.onBackKey
 import com.shieldstream.tv.ui.component.tvClickable
-import com.shieldstream.tv.ui.theme.DisplayFont
+import com.shieldstream.tv.ui.theme.InterFontFamily
 
 private val Background = Brush.verticalGradient(listOf(Color(0xFF151622), Color.Black))
 private val Panel = Color(0xFF1A1C27)
@@ -225,7 +224,7 @@ private fun SetupHeader(step: SetupStep) {
         Image(painterResource(R.drawable.bambi_wordmark), contentDescription = "Bambi", modifier = Modifier.height(20.dp))
         Spacer(Modifier.weight(1f))
         step.number?.let { n ->
-            Text(localizedStringResource(SR.setup_step_counter, n), fontFamily = DisplayFont, fontSize = 22.sp, color = Muted)
+            Text(localizedStringResource(SR.setup_step_counter, n), fontWeight = FontWeight.SemiBold, fontSize = 22.sp, color = Muted)
             Spacer(Modifier.width(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 (1..4).forEach { i ->
@@ -258,7 +257,7 @@ private fun ColumnScope.WelcomeStep(onStart: () -> Unit, onLater: () -> Unit, on
     ) {
         Image(painterResource(R.drawable.bambi_logo), contentDescription = null, modifier = Modifier.size(120.dp))
         Spacer(Modifier.height(16.dp))
-        Text(localizedStringResource(SR.setup_welcome_title), fontFamily = DisplayFont, fontSize = 44.sp, color = Color.White)
+        Text(localizedStringResource(SR.setup_welcome_title), fontWeight = FontWeight.SemiBold, fontSize = 44.sp, color = Color.White)
         Text(
             localizedStringResource(SR.setup_welcome_body),
             style = MaterialTheme.typography.bodyLarge,
@@ -310,7 +309,7 @@ private fun RowScope.WelcomeTile(number: String, title: String, subtitle: String
 @Composable
 private fun StepNumber(text: String, color: Color = Accent, size: Dp = 30.dp) {
     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(size).background(color, CircleShape)) {
-        Text(text, fontFamily = DisplayFont, fontSize = (size.value * 0.6f).sp, color = Color.White)
+        Text(text, fontWeight = FontWeight.SemiBold, fontSize = (size.value * 0.6f).sp, color = Color.White)
     }
 }
 
@@ -332,7 +331,7 @@ private fun ColumnScope.PlaybackPreferencesStep(
         runCatching { firstRequester.requestFocus() }
     }
     Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
-        Text(localizedStringResource(SR.setup_audio_subtitles_title), fontFamily = DisplayFont, fontSize = 38.sp, color = Color.White)
+        Text(localizedStringResource(SR.setup_audio_subtitles_title), fontWeight = FontWeight.SemiBold, fontSize = 38.sp, color = Color.White)
         Text(
             localizedStringResource(SR.setup_preferences_saved),
             style = MaterialTheme.typography.bodyMedium,
@@ -520,7 +519,7 @@ private fun ColumnScope.KeyStep(
 
     Row(Modifier.fillMaxWidth().weight(1f)) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-            Text(title.uppercase(), fontFamily = DisplayFont, fontSize = 38.sp, color = Color.White)
+            Text(title.uppercase(), fontWeight = FontWeight.SemiBold, fontSize = 38.sp, color = Color.White)
             Text(intro, style = MaterialTheme.typography.bodyMedium, color = Muted)
             Spacer(Modifier.height(10.dp))
             steps.forEachIndexed { i, text ->
@@ -658,7 +657,12 @@ private fun KeyField(
         onValueChange = { onValueChange(it.replace("\n", "").trim()) },
         singleLine = true,
         enabled = enabled,
-        textStyle = TextStyle(color = Color.White, fontSize = 20.sp, fontFamily = FontFamily.Monospace),
+        textStyle = TextStyle(
+            color = Color.White,
+            fontSize = 20.sp,
+            fontFamily = InterFontFamily,
+            fontFeatureSettings = "tnum",
+        ),
         cursorBrush = SolidColor(Color.White),
         keyboardOptions = KeyboardOptions(
             autoCorrectEnabled = false,
@@ -794,7 +798,7 @@ private fun ColumnScope.DoneStep(state: SetupUiState.Ready, onFinish: () -> Unit
             Text("✓", color = Color.Black, fontSize = 44.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(16.dp))
-        Text(localizedStringResource(SR.setup_all_set), fontFamily = DisplayFont, fontSize = 48.sp, color = Color.White)
+        Text(localizedStringResource(SR.setup_all_set), fontWeight = FontWeight.SemiBold, fontSize = 48.sp, color = Color.White)
         Text(
             localizedStringResource(SR.setup_done_body),
             style = MaterialTheme.typography.bodyLarge,

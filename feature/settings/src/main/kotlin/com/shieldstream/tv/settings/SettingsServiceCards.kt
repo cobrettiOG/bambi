@@ -48,7 +48,6 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,7 +57,7 @@ import com.shieldstream.tv.domain.ApiService
 import com.shieldstream.tv.domain.DebridService
 import com.shieldstream.tv.ui.component.TvButton
 import com.shieldstream.tv.ui.component.onBackKey
-import com.shieldstream.tv.ui.theme.DisplayFont
+import com.shieldstream.tv.ui.theme.InterFontFamily
 
 // Ajustes → cuentas y servicios: tarjetas de cada servicio, debrid activo, configuración desde el móvil y editor de claves.
 
@@ -91,7 +90,6 @@ internal fun ServiceCard(ui: ServiceUi, onClick: () -> Unit, modifier: Modifier 
                     Spacer(Modifier.height(6.dp))
                     Text(
                         ui.maskedKey ?: localizedStringResource(StringsR.string.settings_no_key),
-                        fontFamily = FontFamily.Monospace,
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.45f),
                     )
@@ -127,7 +125,7 @@ private fun ServiceLogo(service: ApiService) {
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(52.dp).background(color, CircleShape),
     ) {
-        Text(initials, fontFamily = DisplayFont, fontSize = 24.sp, color = Color.White)
+        Text(initials, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, color = Color.White)
     }
 }
 
@@ -241,7 +239,7 @@ internal fun DebridSelectorCard(active: DebridService, onChange: (DebridService)
                     Arrow("◀", enabled = focused)
                     Text(
                         active.title.uppercase(),
-                        fontFamily = DisplayFont,
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 30.sp,
                         color = Color.White,
                         modifier = Modifier.padding(horizontal = 18.dp),
@@ -335,7 +333,12 @@ internal fun KeyEditorDialog(
                 onValueChange = { input = it.replace("\n", "") },
                 singleLine = true,
                 enabled = !editor.busy,
-                textStyle = TextStyle(color = Color.White, fontSize = 20.sp, fontFamily = FontFamily.Monospace),
+                textStyle = TextStyle(
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontFamily = InterFontFamily,
+                    fontFeatureSettings = "tnum",
+                ),
                 cursorBrush = SolidColor(Color.White),
                 keyboardOptions = KeyboardOptions(
                     autoCorrectEnabled = false,

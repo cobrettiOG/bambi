@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.shieldstream.tv.ui.theme.DisplayFont
 
 // Ajustes → reproducción: siguiente episodio, fuentes al pulsar Reproducir, calidad, búfer, frecuencia de la pantalla y avance.
 
@@ -439,7 +438,7 @@ internal fun BufferCard(seconds: Int, enabled: Boolean, onChange: (Int) -> Unit)
                     Arrow("◀", enabled = enabled && focused && seconds > MIN_BUFFER)
                     Text(
                         "$seconds s",
-                        fontFamily = DisplayFont,
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 34.sp,
                         color = Color.White,
                         modifier = Modifier.padding(horizontal = 18.dp),

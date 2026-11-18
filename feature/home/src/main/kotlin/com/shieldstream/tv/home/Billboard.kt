@@ -75,7 +75,6 @@ import com.shieldstream.tv.ui.component.loopingItems
 import com.shieldstream.tv.ui.component.rememberLoopingRowState
 import com.shieldstream.tv.ui.component.tvClickable
 import com.shieldstream.tv.ui.theme.AppColors
-import com.shieldstream.tv.ui.theme.DisplayFont
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -193,7 +192,7 @@ private fun FeaturedSlide(featured: FeaturedItem) {
             } else {
                 Text(
                     text = item.title.uppercase(UiLocale),
-                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.SemiBold,
                     fontSize = 54.sp,
                     lineHeight = 52.sp,
                     color = Color.White,
@@ -420,7 +419,7 @@ private fun CategoryChip(
         }
         Text(
             text = label.uppercase(UiLocale),
-            fontFamily = DisplayFont,
+            fontWeight = FontWeight.SemiBold,
             fontSize = 25.sp,
             letterSpacing = 0.6.sp,
             color = if (focused) Color.Black else Color.White,

@@ -33,6 +33,7 @@ fun ShieldStreamTheme(
             surface = AppColors.Surface,
             onSurface = Color.White,
         ),
+        typography = AppTypography,
         content = content,
     )
 }

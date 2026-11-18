@@ -1,5 +1,6 @@
 package com.shieldstream.tv.ui.component
 
+import com.shieldstream.tv.ui.theme.InterFontFamily
 import com.shieldstream.tv.ui.theme.AppColors
 import com.shieldstream.tv.ui.theme.LocalLightweightUi
 import androidx.compose.animation.core.animateFloatAsState
@@ -309,7 +310,8 @@ fun Top10Card(
     Box(modifier = Modifier.width(numberWidth + PosterWidth).height(posterHeight)) {
         val numberStyle = TextStyle(
             fontSize = 150.sp,
-            fontWeight = FontWeight.Black,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = InterFontFamily,
             letterSpacing = (-12).sp,
         )
         // Relleno oscuro + contorno gris superpuestos.
